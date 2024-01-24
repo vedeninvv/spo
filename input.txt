@@ -1,0 +1,18 @@
+//int commented_func (int arg1) {
+//    while (i <= 10) {
+//        if (i > 3) {
+//            r = 5;
+//        }
+//}
+
+
+int test_func() {
+    while ( i >= 5) {
+        if (i == 1) {
+            x = 6;
+            str1 = "strA";
+        }
+    }
+//    b = (4 + 5) * 2;
+    str2 = "strB";
+}
