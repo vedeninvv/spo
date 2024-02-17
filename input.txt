@@ -35,6 +35,7 @@ int test_func() {
             do {
                 while (k > 10) {
                     a = b * 2;
+                    test_func4();
                 }
             } while (i < 2);
        } while (j > 3);

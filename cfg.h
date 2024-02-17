@@ -24,6 +24,7 @@ typedef struct BlockList BlockList;
 typedef struct CFGBuilder CFGBuilder;
 
 CFG* makeCFG(processedFunc f, int nextId);
+void CFG_print(FILE* f, CFG* cfg, CFG** cfgs, int countCfgs);
 
 struct Block {
     int id;
@@ -31,6 +32,7 @@ struct Block {
     LinkList* predecessors;
     LinkList* exits;
     ASTNode* node;
+    char* circleInfo;
 };
 
 Block* NewBlock(int id, char* call, ASTNode* node);
@@ -51,7 +53,7 @@ struct CFGBuilder {
     CFG* cfg;
 };
 
-void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node);
+void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node, int dowhile);
 
 struct CFG {
     char* procedureName;

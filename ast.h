@@ -18,6 +18,7 @@ struct ASTNode {
     char* value;
     ASTNode* left;
     ASTNode* right;
+    char* valueNameCur;
 };
 
 void destroy();

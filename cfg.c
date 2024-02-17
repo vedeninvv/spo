@@ -119,30 +119,234 @@ void AddExit(Block* block, Block* nextBlock, char* comment) {
     LinkList_push(nextBlock->predecessors, link);
 }
 
+char* NodeFindIdent(ASTNode* node) {
+    if (node == NULL ||
+        strcmp(node->type, "if") == 0 ||
+        strcmp(node->type, "else") == 0 ||
+        strcmp(node->type, "while") == 0 ||
+        strcmp(node->type, "dowhile") == 0 ||
+        strcmp(node->type, "break") == 0
+        ) {
+        return "";
+    }
+
+    if (strcmp(node->type, "TRUE") == 0 ||
+        strcmp(node->type, "FALSE") == 0 ||
+        strcmp(node->type, "STR") == 0 ||
+        strcmp(node->type, "CHAR") == 0 ||
+        strcmp(node->type, "HEX") == 0 ||
+        strcmp(node->type, "BIN") == 0 ||
+        strcmp(node->type, "DEC") == 0) {
+        char* result = malloc(strlen(node->value) + 5);
+        sprintf(result, "%s", node->value);
+        return result;
+    }
+
+    if (strcmp(node->type, "IDENTIFIER") == 0 ||
+        strcmp(node->type, "INTEGER") == 0 ||
+        strcmp(node->type, "LONG") == 0 ||
+        strcmp(node->type, "ULONG") == 0 ||
+        strcmp(node->type, "UINT") == 0
+        ) {
+        char* result = malloc(strlen(node->valueNameCur) + 5);
+        sprintf(result, "%s", node->valueNameCur);
+        return result;
+    }
+
+    if (strcmp(node->type, "listExpr") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        if (rightSide[0] != '\0') {
+            char* res = concat(leftSide, ", ");
+            return concat(res, rightSide);
+        }
+    }
+
+    if (strcmp(node->type, "TYPEDEF") == 0) {
+        return node->value;
+    };
+
+    if (strcmp(node->type, "assigment") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        if (rightSide[0] != '\0') {
+            char* res = concat(leftSide, " = ");
+            return concat(res, rightSide);
+        }
+    };
+
+    if (strcmp(node->type, "var") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        if (rightSide[0] != '\0') {
+            char* res = concat(leftSide, " ");
+            return concat(res, rightSide);
+        }
+    }
+
+    if (strcmp(node->type, "ASSIGN") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        char* res = concat(leftSide, "=");
+        return concat(res, rightSide);
+    }
+    if (strcmp(node->type, "PLUS") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        char* res = concat(leftSide, "+");
+        return concat(res, rightSide);
+    }
+    if (strcmp(node->type, "MINUS") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        char* res = concat(leftSide, "-");
+        return concat(res, rightSide);
+    }
+    if (strcmp(node->type, "STAR") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        char* res = concat(leftSide, "*");
+        return concat(res, rightSide);
+    }
+    if (strcmp(node->type, "DIVIDE") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        char* res = concat(leftSide, "/");
+        return concat(res, rightSide);
+    }
+
+    if (strcmp(node->type, "CALL") == 0) {
+        char* leftSide = NodeFindIdent(node->left);
+        char* rightSide = NodeFindIdent(node->right);
+        char* res = concat(leftSide, "(");
+        if (rightSide)
+            res = concat(res, rightSide);
+        return concat(res, ");");
+    }
+
+    if (strcmp(node->type, "block") == 0) {
+        return NULL;
+    }
+
+    char* leftSide = NodeFindIdent(node->left);
+    char* rightSide = NodeFindIdent(node->right);
+    return concat(leftSide, rightSide);
+}
+
+char* NodeFindIdentByFirstBlock(ASTNode* node) {
+    if (node != NULL) {}
+    if (node == NULL) {
+        return "";
+    }
+    if (strcmp(node->type, "if") == 0 ||
+        strcmp(node->type, "else") == 0 ||
+        strcmp(node->type, "while") == 0 ||
+        strcmp(node->type, "dowhile") == 0 ||
+        strcmp(node->type, "break") == 0
+        ) {
+        return "stop";
+    }
+    else {
+        if (strcmp(node->type, "IDENTIFIER") == 0 ||
+            strcmp(node->type, "INTEGER") == 0 ||
+            strcmp(node->type, "LONG") == 0 ||
+            strcmp(node->type, "ULONG") == 0 ||
+            strcmp(node->type, "UINT") == 0
+            ) {
+            char* result = malloc(strlen(node->valueNameCur) + 5);
+            sprintf(result, "%s", node->valueNameCur);
+            return result;
+        }
+
+        if (strcmp(node->type, "listStatement") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            if (strcmp(leftSide, "stop") == 0) {
+                return "";
+            }
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            if (strcmp(rightSide, "stop") == 0) {
+                return "";
+            }
+            if (leftSide[0] != '\0') {
+                char* res = concat(leftSide, ";\n");
+                return concat(res, rightSide);
+            }
+        }
+
+        if (strcmp(node->type, "ASSIGN") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            char* res = concat(leftSide, "=");
+            return concat(res, rightSide);
+        }
+        if (strcmp(node->type, "PLUS") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            char* res = concat(leftSide, "+");
+            return concat(res, rightSide);
+        }
+        if (strcmp(node->type, "MINUS") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            char* res = concat(leftSide, "-");
+            return concat(res, rightSide);
+        }
+        if (strcmp(node->type, "STAR") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            char* res = concat(leftSide, "*");
+            return concat(res, rightSide);
+        }
+        if (strcmp(node->type, "DIVIDE") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            char* res = concat(leftSide, "/");
+            return concat(res, rightSide);
+        }
+        if (strcmp(node->type, "CALL") == 0) {
+            char* leftSide = NodeFindIdentByFirstBlock(node->left);
+            char* rightSide = NodeFindIdentByFirstBlock(node->right);
+            char* res = concat(leftSide, "(");
+            res = concat(res, rightSide);
+            return concat(res, ")");
+        }
+
+        char* leftSide = NodeFindIdentByFirstBlock(node->left);
+        char* rightSide = NodeFindIdentByFirstBlock(node->right);
+        return concat(leftSide, rightSide);
+    }
+}
+
 void CFGBuilder_visitIf(CFGBuilder* cfgBuilder, ASTNode* node) {
-    Block* ifBlock = CFGBuilder_newBlock(cfgBuilder, "", node->right);
+    Block* ifBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
+    ASTNode* ifBodyNode = node->left;
+    ASTNode* blockIfBody = node->right->left;
+    ifBlock->circleInfo = NodeFindIdent(blockIfBody);
 
-    AddExit(cfgBuilder->current_block, ifBlock, concat("IF ", node->left->value));
+    ASTNode* elseNode = node->right->right;
 
-    Block* afterIfBlock = CFGBuilder_newBlock(cfgBuilder, "", node);
+    AddExit(cfgBuilder->current_block, ifBlock, concat("IF ", ifBodyNode->value));
 
-    if (node->right->right != NULL) {
-        //if ELSE exists
-        Block* elseBlock = CFGBuilder_newBlock(cfgBuilder, "", node);
+    Block* afterIfBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
+    if (elseNode != NULL) {
+        Block* elseBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
         AddExit(cfgBuilder->current_block, elseBlock, "ELSE");
         cfgBuilder->current_block = elseBlock;
-        CFGBuilder_visit(cfgBuilder, node->right->right);
+        cfgBuilder->current_block->circleInfo = NodeFindIdentByFirstBlock(elseNode->left->left);
+        CFGBuilder_visit(cfgBuilder, elseNode, 0);
 
         if (cfgBuilder->current_block->exits->count == 0) {
             AddExit(cfgBuilder->current_block, afterIfBlock, "");
         }
-    } else {
+    }
+    else {
         AddExit(cfgBuilder->current_block, afterIfBlock, "");
     }
 
     cfgBuilder->current_block = ifBlock;
 
-    CFGBuilder_visit(cfgBuilder, node->right->left);
+    ASTNode* nextBlock = node->right->left;
+    CFGBuilder_visit(cfgBuilder, nextBlock, 0);
 
     if (cfgBuilder->current_block->exits->count == 0) {
         AddExit(cfgBuilder->current_block, afterIfBlock, "");
@@ -165,49 +369,76 @@ Block* CFGBuilder_newLoopGuard(CFGBuilder* cfgBuilder) {
 
 void CFGBuilder_visitDoWhile(CFGBuilder* cfgBuilder, ASTNode* node) {
     Block* loopguard = CFGBuilder_newLoopGuard(cfgBuilder);
+    ASTNode* doWhileBodyNode = node->right;
     cfgBuilder->current_block = loopguard;
     BlockList_push(cfgBuilder->curr_loop_guard_stack, loopguard);
 
-    Block* whileBlock = CFGBuilder_newBlock(cfgBuilder, "", node);
+    Block* whileBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
     AddExit(loopguard, whileBlock, "do");
     cfgBuilder->current_block = whileBlock;
-    Block* afterWhile = CFGBuilder_newBlock(cfgBuilder, "", node);
-
+    Block* afterWhile = CFGBuilder_newBlock(cfgBuilder, "", NULL);
     BlockList_push(cfgBuilder->after_loop_block_stack, afterWhile);
 
-    CFGBuilder_visit(cfgBuilder, node->left);
+    CFGBuilder_visit(cfgBuilder, node->left, 1);
 
+cfgBuilder->current_block->circleInfo = NodeFindIdent(node->left);
+AddExit(cfgBuilder->current_block, loopguard, concat("while ", doWhileBodyNode->value));
+AddExit(cfgBuilder->current_block, afterWhile, "");
+cfgBuilder->current_block = afterWhile;
 
-    AddExit(cfgBuilder->current_block, loopguard, concat("while ", node->right->value));
-    AddExit(cfgBuilder->current_block, afterWhile, "");
-    cfgBuilder->current_block = afterWhile;
-
-    BlockList_pop(cfgBuilder->after_loop_block_stack);
-    BlockList_pop(cfgBuilder->curr_loop_guard_stack);
+BlockList_pop(cfgBuilder->after_loop_block_stack);
+BlockList_pop(cfgBuilder->curr_loop_guard_stack);
 }
 
 void CFGBuilder_visitWhile(CFGBuilder* cfgBuilder, ASTNode* node) {
     Block* loopguard = CFGBuilder_newLoopGuard(cfgBuilder);
+    ASTNode* whileBodyNode = node->left;
+
     cfgBuilder->current_block = loopguard;
     BlockList_push(cfgBuilder->curr_loop_guard_stack, loopguard);
 
-    Block* whileBlock = CFGBuilder_newBlock(cfgBuilder, "", node->right);
-    AddExit(cfgBuilder->current_block, whileBlock, concat("while ", node->left->value));
+    Block* whileBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
+    AddExit(cfgBuilder->current_block, whileBlock, concat("while ", whileBodyNode->value));
 
-    Block* afterWhile = CFGBuilder_newBlock(cfgBuilder, "", node->right);
+    Block* afterWhile = CFGBuilder_newBlock(cfgBuilder, "", NULL);
     BlockList_push(cfgBuilder->after_loop_block_stack, afterWhile);
     AddExit(cfgBuilder->current_block, afterWhile, "");
 
     cfgBuilder->current_block = whileBlock;
-    CFGBuilder_visit(cfgBuilder, node->right);
+    cfgBuilder->current_block->circleInfo = NodeFindIdent(node->right);
+    CFGBuilder_visit(cfgBuilder, node->right, 0);
 
     if (cfgBuilder->current_block->exits->count == 0) {
         AddExit(cfgBuilder->current_block, loopguard, "");
     }
 
     cfgBuilder->current_block = afterWhile;
+    //cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
     BlockList_pop(cfgBuilder->after_loop_block_stack);
     BlockList_pop(cfgBuilder->curr_loop_guard_stack);
+}
+
+void CFGBuilder_visitCall(CFGBuilder* cfgBuilder, ASTNode* node) {
+    char* callName = NodeFindIdent(node);
+    Block* callF = CFGBuilder_newBlock(cfgBuilder, callName, NULL);
+    AddExit(callF, callF, "CloseCall");
+
+    ASTNode* nextBlock = node->right->left;
+
+    if (!strstr(node->value, "var")) {
+        CFGBuilder_visit(cfgBuilder, nextBlock, 0);
+    }
+    Block* afterCallBlock = CFGBuilder_newBlock(cfgBuilder, "AfterCall", NULL);
+    if (cfgBuilder->current_block->exits->count == 0) {
+        AddExit(cfgBuilder->current_block, afterCallBlock, "");
+    }
+    cfgBuilder->current_block = afterCallBlock;
+}
+
+void CFGBuilder_visitCallEnd(CFGBuilder* cfgBuilder, ASTNode* node) {
+    char* callName = NodeFindIdent(node);
+    Block* callF = CFGBuilder_newBlock(cfgBuilder, callName, NULL);
+    AddExit(callF, callF, "CloseCall");
 }
 
 void CFGBuilder_visitBreak(CFGBuilder* cfgBuilder, ASTNode* node) {
@@ -218,7 +449,78 @@ void CFGBuilder_visitBreak(CFGBuilder* cfgBuilder, ASTNode* node) {
         cfgBuilder->after_loop_block_stack->blocks[cfgBuilder->after_loop_block_stack->count - 1], "break");
 }
 
-void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node) {
+void next(CFGBuilder* cfgBuilder, ASTNode* node, int dowhile) {
+    if (node->left) {
+        if (node->right != NULL) {}
+        CFGBuilder_visit(cfgBuilder, node->left, dowhile);
+    }
+    if (node->right) {
+        if (node->left != NULL) {}
+        CFGBuilder_visit(cfgBuilder, node->right, dowhile);
+    }
+}
+
+void CFGBuilder_visitDoWhileEnd(CFGBuilder* cfgBuilder, ASTNode* node) {
+    if (!node) {
+        return;
+    }
+
+    if (strcmp(node->type, "if") == 0) {
+        CFGBuilder_visitIf(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "while") == 0) {
+        CFGBuilder_visitWhile(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "dowhile") == 0) {
+        CFGBuilder_visitDoWhile(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "break") == 0) {
+        CFGBuilder_visitBreak(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "CALL") == 0 || strcmp(node->type, "var") == 0 || strcmp(node->type, "assigment") == 0) {
+        if (cfgBuilder->current_block->circleInfo == NULL) {
+            cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
+        }
+        CFGBuilder_visitCall(cfgBuilder, node);
+        return;
+    }
+}
+
+void CFGBuilder_visitEnd(CFGBuilder* cfgBuilder, ASTNode* node) {
+    if (!node) {
+        return;
+    }
+
+    if (strcmp(node->type, "if") == 0) {
+        CFGBuilder_visitIf(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "while") == 0) {
+        CFGBuilder_visitWhile(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "dowhile") == 0) {
+        CFGBuilder_visitDoWhile(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "break") == 0) {
+        CFGBuilder_visitBreak(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "CALL") == 0 || strcmp(node->type, "var") == 0 || strcmp(node->type, "assigment") == 0) {
+        if (cfgBuilder->current_block->circleInfo == NULL) {
+            cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
+        }
+        CFGBuilder_visitCall(cfgBuilder, node);
+        return;
+    }
+}
+
+void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node, int dowhile) {
     if (!node) {
         return;
     }
@@ -237,13 +539,29 @@ void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node) {
     else if (strcmp(node->type, "break") == 0) {
         CFGBuilder_visitBreak(cfgBuilder, node);
         return;
+    }
+    else if (strcmp(node-> type, "CALL") == 0 || strcmp(node->type, "var") == 0 || strcmp(node->type, "assigment") == 0) {
+        if (cfgBuilder->current_block->circleInfo == NULL) {
+            cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
+        }
+        CFGBuilder_visitCall(cfgBuilder, node);
+        return;
+    }
+    else if (strcmp(node->type, "listStatement") == 0) {
+        int i = 0;
+        for (ASTNode* stmt = node; stmt != NULL; stmt = stmt->right) {
+            if (stmt->right) {
+                CFGBuilder_visit(cfgBuilder, stmt->left, dowhile); // Рекурсивный вызов для левого элемента списка
+            } else {
+                if (dowhile == 1) {
+                    CFGBuilder_visitDoWhileEnd(cfgBuilder, stmt->left);
+                }
+                else
+                    CFGBuilder_visitEnd(cfgBuilder, stmt->left);
+            }
+        }
     } else {
-        if (node->left) {
-            CFGBuilder_visit(cfgBuilder, node->left);
-        }
-        if (node->right) {
-            CFGBuilder_visit(cfgBuilder, node->right);
-        }
+        next(cfgBuilder, node, dowhile);
     }
 }
 
@@ -252,7 +570,7 @@ CFG* CFGBuilder_build(CFGBuilder* cfgBuilder, char* procedureName, ASTNode* node
     cfgBuilder->current_block = CFGBuilder_newBlock(cfgBuilder, "", node);
     cfgBuilder->cfg = NewCFG(procedureName, cfgBuilder->current_block);
 
-    CFGBuilder_visit(cfgBuilder, node);
+    CFGBuilder_visit(cfgBuilder, node, 0);
 
     cfgBuilder->cfg->nextId = cfgBuilder->current_id;
 
@@ -267,7 +585,12 @@ CFG* NewCFG(char* procedureName, Block* entryblock) {
 }
 
 void Block_print(Block* block, FILE* f) {
-    fprintf(f, "\"%d\"", block->id);
+    if (block->circleInfo != NULL) {
+        fprintf(f, "\"%d. %s\"", block->id, block->circleInfo);
+    }
+    else {
+        fprintf(f, "\"%d\"", block->id);
+    }
 }
 
 void Link_print(Link* link, FILE* f) {

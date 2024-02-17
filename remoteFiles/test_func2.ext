@@ -1,9 +1,10 @@
 digraph G {label=test_func2;
-"1" -> "2"[label="do"];
-"2" -> "1"[label="while GREATERTHAN(j, 3)"];
-"2" -> "3"[label=""];
-"3" -> end;
+"1." -> "2. res = 10+5*10"[label="do"];
+"2. res = 10+5*10" -> "5."[label=""];
+"5." -> "1."[label="while GREATERTHAN(j, 3)"];
+"5." -> "3."[label=""];
+"3." -> end;
 
-start -> "1";
+start -> "1.";
 start [shape=Mdiamond]; end [shape=Msquare];
 }

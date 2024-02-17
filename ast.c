@@ -50,10 +50,21 @@ ASTNode* createNode(char* type, char* value, ASTNode* left, ASTNode* right) {
     }
     else {
         buff = malloc(strlen(value) + 1);
-        strcpy(buff, value);
+    strcpy(buff, value);
     }
     node->value = buff;
-   
+
+    if (strcmp(node->type, "IDENTIFIER") == 0 ||
+        strcmp(node->type, "LONG") == 0 ||
+        strcmp(node->type, "INTEGER") == 0 ||
+        strcmp(node->type, "ULONG") == 0 ||
+        strcmp(node->type, "UINT") == 0) {
+        node->valueNameCur = buff;
+    }
+    else {
+        node->valueNameCur = NULL;
+    }
+
     allNodes[fileNum].nodes[allNodes[fileNum].count] = node;
     allNodes[fileNum].count++;
 
@@ -62,9 +73,9 @@ ASTNode* createNode(char* type, char* value, ASTNode* left, ASTNode* right) {
 
 void printNodeValue(FILE* f, ASTNode* node) {
     fprintf(f, "\"Type: %s, Id: %d", node->type, node->id);
-    //if (strlen(node->value) > 0) {
-    //    fprintf(f, ", Value: %s", node->value);
-    //}
+    if (strlen(node->value) > 0) {
+        fprintf(f, ", Value: %s", node->value);
+    }
     fprintf(f, "\"");
 }
 

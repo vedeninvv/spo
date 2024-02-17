@@ -1,5 +1,5 @@
-#include<stdio.h>
-#include<stdint.h>
+#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
             }
         }
 
+        printf("1");
         printAST();
 
         ASTNodes allProcedures = findAllFuncs();
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
             sprintf(filename, "%s.ext", cfgs[i]->procedureName);
             FILE* f = fopen(filename, "w+");
             fprintf(f, "digraph G {");
-            CFG_print(f, cfgs[i], i, cfgs, allProcedures.count);
+            CFG_print(f, cfgs[i], cfgs, allProcedures.count);
             fprintf(f, "start [shape=Mdiamond]; end [shape=Msquare];\n}\n");
             fclose(f);
         }
