@@ -1,7 +1,16 @@
 #ifndef LAB_AST_H
 #define LAB_AST_H
 
+#define maxCountOfNodesLists 1024
+
 typedef struct ASTNode ASTNode;
+
+typedef struct ASTNodes ASTNodes;
+
+struct ASTNodes {
+    ASTNode** nodes;
+    int count;
+};
 
 struct ASTNode {
     int id;
@@ -11,8 +20,12 @@ struct ASTNode {
     ASTNode* right;
 };
 
+void destroy();
+
 ASTNode* createNode(char* type, char* value, ASTNode* left, ASTNode* right);
 
 void printAST();
+
+ASTNodes createNodes();
 
 #endif //LAB_AST_H

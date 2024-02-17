@@ -6,13 +6,37 @@
 //}
 
 
-int test_func() {
-    while ( i >= 5) {
-        if (i == 1) {
-            x = 6;
-            str1 = "strA";
+int test_func2 (int arg1) {
+        do {
+            res = 10 + (5 * 10);
+        } while (j > 3);
+}
+
+int test_func3 (int arg1 ) {
+        if (a == 5) {
+            a = 4;
         }
+}
+
+int test_func4 (int arg1 ) {
+        if (a == 5) {
+            a = 4;
+        }else {
+            a = 5;
+        }
+}
+
+int test_func() {
+    if (a == 2) {
+        b = 5;
+
+        do {
+            r = 5+(6*4);
+            do {
+                while (k > 10) {
+                    a = b * 2;
+                }
+            } while (i < 2);
+       } while (j > 3);
     }
-//    b = (4 + 5) * 2;
-    str2 = "strB";
 }

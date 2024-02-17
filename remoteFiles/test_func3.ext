@@ -1,0 +1,9 @@
+digraph G {label=test_func3;
+"2" -> "3"[label="IF EQUALITY(a, 5)"];
+"3" -> "4"[label=""];
+"4" -> end;
+"2" -> "4"[label=""];
+
+start -> "2";
+start [shape=Mdiamond]; end [shape=Msquare];
+}

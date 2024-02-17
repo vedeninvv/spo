@@ -11,6 +11,9 @@ lex.yy.c: lexer.l
 error.o: error.c
 	gcc -c -o error.o error.c
 
+cfg.o: cfg.c
+	gcc -c -o cfg.o cfg.c
+
 parser.tab.c: parser.y
 	bison -d -t parser.y
 
@@ -26,8 +29,9 @@ lex.yy.o: lex.yy.c
 parser.tab.o: parser.tab.c
 	gcc -c -o parser.tab.o parser.tab.c
 
-result: ast.o parser.tab.o lex.yy.o main.o error.o
-	gcc main.o parser.tab.o lex.yy.o ast.o error.o -o result && chmod +x result
+result: ast.o parser.tab.o lex.yy.o main.o error.o cfg.o
+	gcc main.o parser.tab.o lex.yy.o ast.o error.o cfg.o -o result && chmod +x result
 
 run: result
-	./result input.txt > output.txt && iconv -f ISO-8859-1 -t utf-8 output.txt > utf8_output.txt && cat utf8_output.txt | graph-easy --html --output result_tree.html
+	./result input.txt input2.txt
+#	./result input.txt > output.txt && iconv -f ISO-8859-1 -t utf-8 output.txt > utf8_output.txt && cat utf8_output.txt | graph-easy --html --output result_tree.html

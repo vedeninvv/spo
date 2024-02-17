@@ -3,31 +3,62 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 #include "parser.tab.h"
 #include "ast.h"
+#include "cfg.h"
+
+extern ASTNodes allNodes[maxCountOfNodesLists];
+extern int fileNum;
 
 extern int yyparse();
 extern FILE* yyin;
 
-extern ASTNode** allNodes;
-extern uint64_t allNodesCount;
-
 int main(int argc, char** argv) {
-    allNodes = malloc(1024 * 8 * sizeof(ASTNode*));
-    allNodesCount = 0;
+    if (argc > maxCountOfNodesLists) {
+        printf("Max count of input files - 1024");
+        return 1;
+    }
 
     if (argc > 1) {
-        FILE* input_file = fopen(argv[1], "r");
-        if (input_file) {
-            yyin = input_file;
-            yyparse();
-            fclose(input_file);
-            printAST();
-        } else {
-            printf("Could not open file: %s\n", argv[1]);
+        for (int i = 1; i < argc; ++i) {
+            FILE* input_file = fopen(argv[i], "r");
+            if (input_file) {
+                allNodes[fileNum] = createNodes();
+                yyin = input_file;
+                yyparse();
+                fclose(input_file);
+                fileNum++;
+            } else {
+                printf("Can not open file: %s\n", argv[i]);
+            }
         }
+
+        printAST();
+
+        ASTNodes allProcedures = findAllFuncs();
+        CFG** cfgs = malloc(allProcedures.count * sizeof(CFG*));
+        for (int i = 0; i < allProcedures.count; ++i) {
+            processedFunc func = processFunc(allProcedures.nodes[i]);
+            CFG* cfg = makeCFG(func, i);
+            cfgs[i] = cfg;
+        }
+
+        for (int i = 0; i < allProcedures.count; ++i) {
+            char* filename = malloc(strlen(cfgs[i]->procedureName) + 5);
+            sprintf(filename, "%s.ext", cfgs[i]->procedureName);
+            FILE* f = fopen(filename, "w+");
+            fprintf(f, "digraph G {");
+            CFG_print(f, cfgs[i], i, cfgs, allProcedures.count);
+            fprintf(f, "start [shape=Mdiamond]; end [shape=Msquare];\n}\n");
+            fclose(f);
+        }
+
+        destroy();
     } else {
-        printf("Run: %s <input_file>\n", argv[0]);
+        printf("Usage: %s <input_file>\n", argv[0]);
+        return 1;
     }
+
     return 0;
 }
