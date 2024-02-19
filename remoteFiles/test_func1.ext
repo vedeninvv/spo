@@ -1,20 +1,12 @@
 digraph G {label=test_func1;
-"5. b = a+c" -> "7. d = 10+12-13"[label=""];
-"7. d = 10+12-13" -> "9."[label=""];
-"9." -> "10. a = 1"[label="IF LESSTHAN(i, 10)"];
-"10. a = 1" -> "13."[label=""];
-"13." -> "14. m = 2"[label="IF LESSTHAN(m, 1)"];
-"14. m = 2" -> "17."[label=""];
-"17." -> "15."[label=""];
-"15." -> "11."[label=""];
-"11." -> "18. a = 2"[label="IF LESSTHAN(k, 5)"];
-"18. a = 2" -> "21."[label=""];
-"21." -> "19."[label=""];
-"19." -> end;
-"11." -> "19."[label=""];
-"13." -> "15."[label=""];
-"9." -> "11."[label=""];
+"5. int b = 5" -> "7. int k = b+2"[label=""];
+"7. int k = b+2" -> "9"[label=""];
+"9" -> "10. b = 5"[label="IF LESSTHAN(k, 5)"];
+"10. b = 5" -> "13"[label=""];
+"13" -> "11"[label=""];
+"11" -> end;
+"9" -> "11"[label=""];
 
-start -> "5. b = a+c";
+start -> "5. int b = 5";
 start [shape=Mdiamond]; end [shape=Msquare];
 }

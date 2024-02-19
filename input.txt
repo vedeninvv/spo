@@ -6,34 +6,42 @@
 //}
 
 
-int test_func2 (int arg1) {
-        do {
-            res = 10 + (5 * 10);
-        } while (j > 3);
+int test_func2 () {
+    //int a = 2;
+    int j = 0;
+    do {
+        res = 10 + 2;
+        j = j + 1;
+    } while (j > 3);
 }
 
-int test_func3 (int arg1 ) {
-        if (a == 5) {
-            a = 4;
-        }
+int test_func3 (int arg1) {
+    // test_func2();
+    if (a == 5) {
+        a = 4;
+    }
 }
 
-int test_func4 (int arg1 ) {
-        if (a == 5) {
-            a = 4;
-        }else {
-            a = 5;
-        }
+int test_func4 (int arg1) {
+    int a; 
+    if (a == 5) {
+        a = arg1;
+        test_func3(a);
+    }else {
+        test_func2();
+    }
 }
 
 int test_func() {
+    test_func4(2);
     if (a == 2) {
         b = 5;
-
+        x = 4 + 2;
         do {
-            r = 5+(6*4);
+            r = x - 2;
             do {
                 while (k > 10) {
+                    test_func1(10);
                     a = b * 2;
                     test_func4();
                 }

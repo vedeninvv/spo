@@ -1,0 +1,9 @@
+digraph G {label=CallGraph;
+"test_func2"
+"test_func3"
+"test_func4" -> "test_func2"[label="1"];
+"test_func4" -> "test_func3"[label="1"];
+"test_func" -> "test_func4"[label="2"];
+"test_func" -> "test_func1"[label="1"];
+"test_func1"
+}

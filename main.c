@@ -1,14 +1,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
 #include "parser.tab.h"
 #include "ast.h"
 #include "cfg.h"
 
-extern ASTNodes allNodes[maxCountOfNodesLists];
+extern ASTNodes* allNodes[maxCountOfNodesLists];
 extern int fileNum;
 
 extern int yyparse();
@@ -33,27 +32,33 @@ int main(int argc, char** argv) {
                 printf("Can not open file: %s\n", argv[i]);
             }
         }
+        
+        printf("Printing AST");
+        FILE* f = fopen("ast.dot", "w+");
+        printAST(f);
+        fclose(f);
 
-        printf("1");
-        printAST();
-
-        ASTNodes allProcedures = findAllFuncs();
-        CFG** cfgs = malloc(allProcedures.count * sizeof(CFG*));
-        for (int i = 0; i < allProcedures.count; ++i) {
-            processedFunc func = processFunc(allProcedures.nodes[i]);
+        ASTNodes* allProcedures = findAllFuncs();
+        CFG** cfgs = malloc(allProcedures->count * sizeof(CFG*));
+        for (int i = 0; i < allProcedures->count; ++i) {
+            ProcessedFunc* func = processFunc(allProcedures->nodes[i]);
             CFG* cfg = makeCFG(func, i);
             cfgs[i] = cfg;
         }
 
-        for (int i = 0; i < allProcedures.count; ++i) {
+        for (int i = 0; i < allProcedures->count; ++i) {
             char* filename = malloc(strlen(cfgs[i]->procedureName) + 5);
             sprintf(filename, "%s.ext", cfgs[i]->procedureName);
             FILE* f = fopen(filename, "w+");
             fprintf(f, "digraph G {");
-            CFG_print(f, cfgs[i], cfgs, allProcedures.count);
+            CFG_print(f, cfgs[i], cfgs, allProcedures->count);
             fprintf(f, "start [shape=Mdiamond]; end [shape=Msquare];\n}\n");
             fclose(f);
         }
+
+        FILE* callGraphFile = fopen("callGraph.dot", "w+");
+        printCallGraph(callGraphFile, cfgs, allProcedures->count);
+        fclose(callGraphFile);
 
         destroy();
     } else {

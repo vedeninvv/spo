@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include "cfg.h"
 
-extern ASTNodes allNodes[maxCountOfNodesLists];
+extern ASTNodes* allNodes[maxCountOfNodesLists];
 extern int fileNum;
 
 char* cloneChar(char* toClone) {
-    char* buff = malloc(strlen(toClone) * sizeof(char));
+    char* buff = malloc(strlen(toClone) * sizeof(char) + 1);
     strcpy(buff, toClone);
 
     return buff;
@@ -19,28 +19,28 @@ char* concat(char* a, char* b) {
     return c;
 }
 
-ASTNodes findAllFuncs() {
-    ASTNodes funcDefs = createNodes();
+ASTNodes* findAllFuncs() {
+    ASTNodes* funcDefs = createNodes();
     for (int i = 0; i < fileNum; ++i) {
-        for (int j = 0; j < allNodes[i].count; ++j) {
-            if (strcmp(allNodes[i].nodes[j]->type, "sourceItem") == 0) {
-                funcDefs.nodes[funcDefs.count] = allNodes[i].nodes[j];
-                funcDefs.count++;
+        for (int j = 0; j < allNodes[i]->count; ++j) {
+            if (strcmp(allNodes[i]->nodes[j]->type, "sourceItem") == 0) {
+                funcDefs->nodes[funcDefs->count] = allNodes[i]->nodes[j];
+                funcDefs->count++;
             }
         }
     }
     return funcDefs;
 }
 
-processedFunc processFunc(ASTNode* func) {
-    processedFunc pf = {};
+ProcessedFunc* processFunc(ASTNode* func) {
+    ProcessedFunc* pf = malloc(sizeof(ProcessedFunc));
     if (!func && strcmp(func->type, "sourceItem") != 0 && !func->left
         && !func->right && !func->left->left && !func->left->left->right) {
         printf("Not valid func");
         return pf;
     }
-    pf.identifier = func->left->left->right->value;
-    pf.body = func->right;
+    pf->identifier = func->left->left->right->value;
+    pf->body = func->right;
     return pf;
 }
 
@@ -104,7 +104,6 @@ void BlockList_pop(BlockList* list) {
 void CFGBuilder_init(CFGBuilder* cfgBuilder) {
     cfgBuilder->after_loop_block_stack = NewBlockList();
     cfgBuilder->curr_loop_guard_stack = NewBlockList();
-    cfgBuilder->calls = NewBlockList();
     cfgBuilder->current_block = NULL;
 }
 
@@ -137,20 +136,15 @@ char* NodeFindIdent(ASTNode* node) {
         strcmp(node->type, "HEX") == 0 ||
         strcmp(node->type, "BIN") == 0 ||
         strcmp(node->type, "DEC") == 0) {
-        char* result = malloc(strlen(node->value) + 5);
-        sprintf(result, "%s", node->value);
-        return result;
+        return cloneChar(node->value);
     }
 
     if (strcmp(node->type, "IDENTIFIER") == 0 ||
         strcmp(node->type, "INTEGER") == 0 ||
         strcmp(node->type, "LONG") == 0 ||
         strcmp(node->type, "ULONG") == 0 ||
-        strcmp(node->type, "UINT") == 0
-        ) {
-        char* result = malloc(strlen(node->valueNameCur) + 5);
-        sprintf(result, "%s", node->valueNameCur);
-        return result;
+        strcmp(node->type, "UINT") == 0) {
+        return cloneChar(node->value);
     }
 
     if (strcmp(node->type, "listExpr") == 0) {
@@ -163,7 +157,7 @@ char* NodeFindIdent(ASTNode* node) {
     }
 
     if (strcmp(node->type, "TYPEDEF") == 0) {
-        return node->value;
+        return cloneChar(node->value);
     };
 
     if (strcmp(node->type, "assigment") == 0) {
@@ -182,6 +176,9 @@ char* NodeFindIdent(ASTNode* node) {
             char* res = concat(leftSide, " ");
             return concat(res, rightSide);
         }
+    }
+    if (strcmp(node->type, "array") == 0) {
+        return concat(node->left->value, node->value);
     }
 
     if (strcmp(node->type, "ASSIGN") == 0) {
@@ -208,7 +205,7 @@ char* NodeFindIdent(ASTNode* node) {
         char* res = concat(leftSide, "*");
         return concat(res, rightSide);
     }
-    if (strcmp(node->type, "DIVIDE") == 0) {
+    if (strcmp(node->type, "SLASH") == 0) {
         char* leftSide = NodeFindIdent(node->left);
         char* rightSide = NodeFindIdent(node->right);
         char* res = concat(leftSide, "/");
@@ -253,9 +250,7 @@ char* NodeFindIdentByFirstBlock(ASTNode* node) {
             strcmp(node->type, "ULONG") == 0 ||
             strcmp(node->type, "UINT") == 0
             ) {
-            char* result = malloc(strlen(node->valueNameCur) + 5);
-            sprintf(result, "%s", node->valueNameCur);
-            return result;
+            return cloneChar(node->valueNameCur);
         }
 
         if (strcmp(node->type, "listStatement") == 0) {
@@ -321,7 +316,7 @@ void CFGBuilder_visitIf(CFGBuilder* cfgBuilder, ASTNode* node) {
     Block* ifBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
     ASTNode* ifBodyNode = node->left;
     ASTNode* blockIfBody = node->right->left;
-    ifBlock->circleInfo = NodeFindIdent(blockIfBody);
+    ifBlock->info = NodeFindIdent(blockIfBody);
 
     ASTNode* elseNode = node->right->right;
 
@@ -332,7 +327,7 @@ void CFGBuilder_visitIf(CFGBuilder* cfgBuilder, ASTNode* node) {
         Block* elseBlock = CFGBuilder_newBlock(cfgBuilder, "", NULL);
         AddExit(cfgBuilder->current_block, elseBlock, "ELSE");
         cfgBuilder->current_block = elseBlock;
-        cfgBuilder->current_block->circleInfo = NodeFindIdentByFirstBlock(elseNode->left->left);
+        cfgBuilder->current_block->info = NodeFindIdentByFirstBlock(elseNode->left->left);
         CFGBuilder_visit(cfgBuilder, elseNode, 0);
 
         if (cfgBuilder->current_block->exits->count == 0) {
@@ -381,7 +376,7 @@ void CFGBuilder_visitDoWhile(CFGBuilder* cfgBuilder, ASTNode* node) {
 
     CFGBuilder_visit(cfgBuilder, node->left, 1);
 
-cfgBuilder->current_block->circleInfo = NodeFindIdent(node->left);
+cfgBuilder->current_block->info = NodeFindIdent(node->left);
 AddExit(cfgBuilder->current_block, loopguard, concat("while ", doWhileBodyNode->value));
 AddExit(cfgBuilder->current_block, afterWhile, "");
 cfgBuilder->current_block = afterWhile;
@@ -405,7 +400,7 @@ void CFGBuilder_visitWhile(CFGBuilder* cfgBuilder, ASTNode* node) {
     AddExit(cfgBuilder->current_block, afterWhile, "");
 
     cfgBuilder->current_block = whileBlock;
-    cfgBuilder->current_block->circleInfo = NodeFindIdent(node->right);
+    cfgBuilder->current_block->info = NodeFindIdent(node->right);
     CFGBuilder_visit(cfgBuilder, node->right, 0);
 
     if (cfgBuilder->current_block->exits->count == 0) {
@@ -420,6 +415,9 @@ void CFGBuilder_visitWhile(CFGBuilder* cfgBuilder, ASTNode* node) {
 
 void CFGBuilder_visitCall(CFGBuilder* cfgBuilder, ASTNode* node) {
     char* callName = NodeFindIdent(node);
+    if (strcmp(node->type, "CALL") == 0) {
+        addNewCFGLink(cfgBuilder->cfg, node->left->value);
+    }
     Block* callF = CFGBuilder_newBlock(cfgBuilder, callName, NULL);
     AddExit(callF, callF, "CloseCall");
 
@@ -482,8 +480,8 @@ void CFGBuilder_visitDoWhileEnd(CFGBuilder* cfgBuilder, ASTNode* node) {
         return;
     }
     else if (strcmp(node->type, "CALL") == 0 || strcmp(node->type, "var") == 0 || strcmp(node->type, "assigment") == 0) {
-        if (cfgBuilder->current_block->circleInfo == NULL) {
-            cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
+        if (cfgBuilder->current_block->info == NULL) {
+            cfgBuilder->current_block->info = NodeFindIdent(node);
         }
         CFGBuilder_visitCall(cfgBuilder, node);
         return;
@@ -512,8 +510,8 @@ void CFGBuilder_visitEnd(CFGBuilder* cfgBuilder, ASTNode* node) {
         return;
     }
     else if (strcmp(node->type, "CALL") == 0 || strcmp(node->type, "var") == 0 || strcmp(node->type, "assigment") == 0) {
-        if (cfgBuilder->current_block->circleInfo == NULL) {
-            cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
+        if (cfgBuilder->current_block->info == NULL) {
+            cfgBuilder->current_block->info = NodeFindIdent(node);
         }
         CFGBuilder_visitCall(cfgBuilder, node);
         return;
@@ -541,8 +539,8 @@ void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node, int dowhile) {
         return;
     }
     else if (strcmp(node-> type, "CALL") == 0 || strcmp(node->type, "var") == 0 || strcmp(node->type, "assigment") == 0) {
-        if (cfgBuilder->current_block->circleInfo == NULL) {
-            cfgBuilder->current_block->circleInfo = NodeFindIdent(node);
+        if (cfgBuilder->current_block->info == NULL) {
+            cfgBuilder->current_block->info = NodeFindIdent(node);
         }
         CFGBuilder_visitCall(cfgBuilder, node);
         return;
@@ -572,21 +570,24 @@ CFG* CFGBuilder_build(CFGBuilder* cfgBuilder, char* procedureName, ASTNode* node
 
     CFGBuilder_visit(cfgBuilder, node, 0);
 
-    cfgBuilder->cfg->nextId = cfgBuilder->current_id;
+    cfgBuilder->cfg->id = cfgBuilder->current_id;
 
     return cfgBuilder->cfg;
 }
 
 CFG* NewCFG(char* procedureName, Block* entryblock) {
     CFG* cfg = malloc(sizeof(CFG));
+
     cfg->procedureName = procedureName;
     cfg->entryblock = entryblock;
+    cfg->cfgLinkList = NewCFGLinkList();
+
     return cfg;
 }
 
 void Block_print(Block* block, FILE* f) {
-    if (block->circleInfo != NULL) {
-        fprintf(f, "\"%d. %s\"", block->id, block->circleInfo);
+    if (block->info != NULL) {
+        fprintf(f, "\"%d. %s\"", block->id, block->info);
     }
     else {
         fprintf(f, "\"%d\"", block->id);
@@ -651,11 +652,51 @@ void CFG_print(FILE* f, CFG* cfg, CFG** cfgs, int countCfgs) {
     fprintf(f, ";\n");
 }
 
-CFG* makeCFG(processedFunc pf, int nextId) {
-    CFGBuilder cfgBuilder = {};
-    CFGBuilder_init(&cfgBuilder);
+CFG* makeCFG(ProcessedFunc* pf, int nextId) {
+    CFGBuilder* cfgBuilder = malloc(sizeof(CFGBuilder));
+    CFGBuilder_init(cfgBuilder);
 
-    CFG* cfg = CFGBuilder_build(&cfgBuilder, pf.identifier, pf.body, nextId);
+    CFG* cfg = CFGBuilder_build(cfgBuilder, pf->identifier, pf->body, nextId);
 
     return cfg;
+}
+
+CFGLinkList* NewCFGLinkList() {
+    CFGLinkList* list = malloc(sizeof(CFGLinkList));
+
+    list->links = malloc(sizeof(CFGLink*) * 1024);
+    list->count = 0;
+
+    return list;
+}
+
+void addNewCFGLink(CFG* cfg, char* funcName) {
+    for (int i = 0; i < cfg->cfgLinkList->count; i++) {
+        if (strcmp(cfg->cfgLinkList->links[i]->linkedCFGName, funcName) == 0) {
+            cfg->cfgLinkList->links[i]->callCount++;
+            return;
+        }
+    }
+
+    CFGLink* cfgLink = malloc(sizeof(CFGLink));
+    cfgLink->callCount = 1;
+    cfgLink->linkedCFGName = funcName;
+
+    cfg->cfgLinkList->links[cfg->cfgLinkList->count] = cfgLink;
+    cfg->cfgLinkList->count++;
+}
+
+void printCallGraph(FILE* f, CFG** cfgList, int cfgCount) {
+    fprintf(f, "digraph G {label=CallGraph;\n");
+    for (int i = 0; i < cfgCount; i++) {
+        for (int j = 0; j < cfgList[i]->cfgLinkList->count; j++) {
+            char* linkedFuncName = cfgList[i]->cfgLinkList->links[j]->linkedCFGName;
+            int callCount = cfgList[i]->cfgLinkList->links[j]->callCount;
+            fprintf(f, "\"%s\" -> \"%s\"[label=\"%d\"];\n", cfgList[i]->procedureName, linkedFuncName, callCount);
+        }
+        if (cfgList[i]->cfgLinkList->count == 0) {
+            fprintf(f, "\"%s\"\n", cfgList[i]->procedureName);
+        }
+    }
+    fprintf(f, "}");
 }

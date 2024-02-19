@@ -1,10 +1,12 @@
 digraph G {label=test_func2;
-"1." -> "2. res = 10+5*10"[label="do"];
-"2. res = 10+5*10" -> "5."[label=""];
-"5." -> "1."[label="while GREATERTHAN(j, 3)"];
-"5." -> "3."[label=""];
-"3." -> end;
+"1. int j = 0" -> "3"[label=""];
+"3" -> "4. res = 10+2"[label="do"];
+"4. res = 10+2" -> "7. j = j+1"[label=""];
+"7. j = j+1" -> "9"[label=""];
+"9" -> "3"[label="while GREATERTHAN(j, 3)"];
+"9" -> "5"[label=""];
+"5" -> end;
 
-start -> "1.";
+start -> "1. int j = 0";
 start [shape=Mdiamond]; end [shape=Msquare];
 }

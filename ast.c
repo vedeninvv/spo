@@ -4,22 +4,22 @@
 #include <inttypes.h>
 #include "ast.h"
 
-ASTNodes allNodes[maxCountOfNodesLists];
+ASTNodes* allNodes[maxCountOfNodesLists];
 int fileNum;
 
 void destroy() {
     for (int i = 0; i < fileNum; ++i) {
-        for (int j = 0; j < allNodes[i].count; ++j) {
-            free(allNodes[i].nodes[j]);
+        for (int j = 0; j < allNodes[i]->count; ++j) {
+            free(allNodes[i]->nodes[j]);
         }
-        free(allNodes[i].nodes);
+        free(allNodes[i]->nodes);
     }
 }
 
-ASTNodes createNodes() {
-    ASTNodes nodes;
-    nodes.nodes = malloc(1024 * 8 * sizeof(ASTNode*));
-    nodes.count = 0;
+ASTNodes* createNodes() {
+    ASTNodes* nodes = malloc(sizeof(ASTNodes));
+    nodes->nodes = malloc(1024 * 8 * sizeof(ASTNode*));
+    nodes->count = 0;
     return nodes;
 }
 
@@ -50,7 +50,7 @@ ASTNode* createNode(char* type, char* value, ASTNode* left, ASTNode* right) {
     }
     else {
         buff = malloc(strlen(value) + 1);
-    strcpy(buff, value);
+        strcpy(buff, value);
     }
     node->value = buff;
 
@@ -65,8 +65,8 @@ ASTNode* createNode(char* type, char* value, ASTNode* left, ASTNode* right) {
         node->valueNameCur = NULL;
     }
 
-    allNodes[fileNum].nodes[allNodes[fileNum].count] = node;
-    allNodes[fileNum].count++;
+    allNodes[fileNum]->nodes[allNodes[fileNum]->count] = node;
+    allNodes[fileNum]->count++;
 
     return node;
 }
@@ -96,25 +96,22 @@ void printNode(FILE* f, ASTNode* node) {
     }
 }
 
-void printAST() {
-    FILE* f = fopen("ast.dot", "w+");
+void printAST(FILE* f) {
     fprintf(f, "digraph G {\n");
 
     int idCounter = 0;
 
     for (int file = 0; file < fileNum; ++file) {
-        for (int i = 0; i < allNodes[file].count; ++i) {
-            allNodes[file].nodes[i]->id = idCounter;
+        for (int i = 0; i < allNodes[file]->count; ++i) {
+            allNodes[file]->nodes[i]->id = idCounter;
             idCounter++;
         }
         fprintf(f, "\"ROOT\"");
         fprintf(f, " -> ");
-        printNodeValue(f, allNodes[file].nodes[allNodes[file].count - 1]);
-        printf(";\n");
-        printNode(f, allNodes[file].nodes[allNodes[file].count - 1]);
+        printNodeValue(f, allNodes[file]->nodes[allNodes[file]->count - 1]);
+        fprintf(f, ";\n");
+        printNode(f, allNodes[file]->nodes[allNodes[file]->count - 1]);
     }
 
     fprintf(f, "\n}\n");
-
-    fclose(f);
 }
