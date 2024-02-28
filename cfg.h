@@ -4,16 +4,16 @@
 #include "ast.h"
 
 //Func
-typedef struct ProcessedFunc ProcessedFunc;
+typedef struct processedFunc processedFunc;
 
-struct ProcessedFunc {
+struct processedFunc {
     char* identifier;
     ASTNode* body;
 };
 
-ASTNodes* findAllFuncs();
+ASTNodes findAllFuncs();
 
-ProcessedFunc* processFunc(ASTNode* procedure);
+processedFunc processFunc(ASTNode* procedure);
 
 //CFG
 typedef struct CFG CFG;
@@ -22,10 +22,8 @@ typedef struct LinkList LinkList;
 typedef struct Block Block;
 typedef struct BlockList BlockList;
 typedef struct CFGBuilder CFGBuilder;
-typedef struct CFGLink CFGLink;
-typedef struct CFGLinkList CFGLinkList;
 
-CFG* makeCFG(ProcessedFunc* f, int nextId);
+CFG* makeCFG(processedFunc f, int nextId);
 void CFG_print(FILE* f, CFG* cfg, CFG** cfgs, int countCfgs);
 
 struct Block {
@@ -34,7 +32,7 @@ struct Block {
     LinkList* predecessors;
     LinkList* exits;
     ASTNode* node;
-    char* info;
+    char* circleInfo;
 };
 
 Block* NewBlock(int id, char* call, ASTNode* node);
@@ -50,6 +48,7 @@ struct CFGBuilder {
     BlockList* after_loop_block_stack;
     BlockList* curr_loop_guard_stack;
     Block* current_block;
+    BlockList* calls;
     int current_id;
     CFG* cfg;
 };
@@ -59,8 +58,7 @@ void CFGBuilder_visit(CFGBuilder* cfgBuilder, ASTNode* node, int dowhile);
 struct CFG {
     char* procedureName;
     Block* entryblock;
-    int id;
-    CFGLinkList* cfgLinkList;
+    int nextId;
 };
 
 CFG* NewCFG(char* procedureName, Block* entryblock);
@@ -79,21 +77,5 @@ struct LinkList {
 };
 
 LinkList* NewLinkList();
-
-struct CFGLink {
-    char* linkedCFGName;
-    int callCount;
-};
-
-void addNewCFGLink(CFG* cfg, char* linkedCFGName);
-
-struct CFGLinkList {
-    CFGLink** links;
-    int count;
-};
-
-CFGLinkList* NewCFGLinkList();
-
-void printCallGraph(FILE* f, CFG** cfgList, int cfgCount);
 
 #endif //LAB1_CFG_H

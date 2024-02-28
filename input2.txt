@@ -1,7 +1,14 @@
 int test_func1() {
-    int b = 5;
-    int k = b + 2;
+    b = a + c;
+
+    d = 10 + 12 - 13;
+    if(i < 10) {
+        a = 1;
+        if (m < 1) {
+            m = 2;
+        }
+    }
     if (k < 5) {
-        b = 5;
+        a = 2;
     }
 }
