@@ -1,0 +1,52 @@
+int read();
+void write(int r);
+
+void printNumber(int num, bool n){
+    int nextLine = 10;
+    int revertedNum = 0;
+
+    if (num == 0) {
+        write(48);
+    } else {
+
+        while (num != 0) {
+            revertedNum = (revertedNum * 10) + (num % 10);
+            num = num / 10;
+        }
+        while (revertedNum != 0) {
+            write((revertedNum % 10) + 0x30);
+            revertedNum = revertedNum / 10;
+        }
+        if(n){
+            write(10);
+        }
+    }
+}
+
+int readNumber() {
+    int c = read();
+    int res = 0;
+    while(true) {
+        if ((c >= 0x30) && (c <= 0x39)){
+            res = res * 10 + (c - 0x30);
+        } else {
+            break;
+        }
+        c = read();
+    }
+    return res;
+}
+
+void main() {
+    int x = 123;
+    int r = readNumber();
+    int result = x + r;
+
+    int i = 0;
+    while(i < 10) {
+        result = result + 1;
+        i = i + 1;
+    }
+
+    printNumber(result, true);
+}

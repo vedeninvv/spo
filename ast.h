@@ -1,18 +1,35 @@
-#ifndef LAB_AST_H
-#define LAB_AST_H
+#ifndef LAB_1_AST_H
+#define LAB_1_AST_H
+
+#define funcSignature "funcSignature"
+#define sourceItem "sourceItem"
+
+#define maxCountOfNodesLists 1024
 
 typedef struct ASTNode ASTNode;
+typedef struct ASTNodes ASTNodes;
 
-struct ASTNode {
-    int id;
-    char* type;
-    char* value;
-    ASTNode* left;
-    ASTNode* right;
+struct ASTNodes {
+    ASTNode **nodes;
+    int count;
 };
 
-ASTNode* createNode(char* type, char* value, ASTNode* left, ASTNode* right);
+struct ASTNode {
+    char* type;
+    ASTNode* left;
+    ASTNode* right;
+    char* value;
+    char* valueNameCur;
+    int id;
+};
+
+void destroy();
 
 void printAST();
 
-#endif //LAB_AST_H
+ASTNode *createNode(char *type, ASTNode *left, ASTNode *right, char *value);
+
+ASTNodes createNodes();
+
+
+#endif //LAB_1_AST_H

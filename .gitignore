@@ -1,0 +1,12 @@
+/cmake-build-debug/
+/.idea/
+.env
+/vm/
+/out/
+/build/
+/bin/
+/.vs/
+lab1.sln
+lab1.vcxproj
+lab1.vcxproj.user
+/obj/
