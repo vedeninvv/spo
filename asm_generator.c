@@ -255,7 +255,7 @@ int translate_expression(processedExpression expression, symbolicTable *table) {
             res = translate_binary(expression.binary, table);
             break;
         case BRACES:
-            return translate_expression(*expression.expression, table); // no need to push already pushed r0
+            return translate_expression(*expression.expression, table);
         case CALL:
             res = translate_call(expression.call, table);
             break;
@@ -460,7 +460,7 @@ int translate_procedure(int num, processedFunc *funcs, int count, symbolicTable 
     return 0;
 }
 
-int generate_asm(processedFunc *funcs, int count, builtinFunctions functions) {
+int generate_asm(processedFunc *funcs, int count, builtinFunctions functions, char *start) {
     symbolicTable *table = newSymbolicTable(NULL);
 
     for (int i = 0; i < count; ++i) {
@@ -509,13 +509,13 @@ int generate_asm(processedFunc *funcs, int count, builtinFunctions functions) {
         if (funcs[i].seen == 0) {
             continue;
         }
-        if (strcmp(funcs[i].identifier, "main") == 0) {
+        if (strcmp(funcs[i].identifier, start) == 0) {
             put_label("start")
         }
         if (translate_procedure(i, funcs, count, table) != 0) {
             return 2;
         }
-        if (strcmp(funcs[i].identifier, "main") == 0) {
+        if (strcmp(funcs[i].identifier, start) == 0) {
             jump("halt")
         }
     }

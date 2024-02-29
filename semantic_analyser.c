@@ -307,8 +307,7 @@ int processSemanticsForFunction(processedFunc *func, symbolicTable *table) {
     table->currentFuncId = func->identifier;
     for (int i = 0; i < func->args.count; ++i) {
         union ctx c = {};
-        if (symbolicTable_putSymbol(table, func->args.vars[i].type, func->args.vars[i].identifier, NULL, c,
-                                    SYMBOL_CATEGORY_VAR) != 0) {
+        if (symbolicTable_putSymbol(table, func->args.vars[i].type, func->args.vars[i].identifier, NULL, c, SYMBOL_CATEGORY_VAR) != 0) {
             symbolicTable_free(table);
             return 1;
         }
@@ -322,21 +321,22 @@ int processSemanticsForFunction(processedFunc *func, symbolicTable *table) {
 }
 
 
-int processSemantics(processedFunc *funcs, int count, builtinFunctions functions) {
+char* processSemantics(processedFunc *funcs, int count, builtinFunctions builtinFunctions) {
     struct context ctx = {funcs, count};
     symbolicTable *table = newSymbolicTable(NULL);
     processedFunc *main = NULL;
 
-    for (int i = 0; i < functions.count; i++) {
+    for (int i = 0; i < builtinFunctions.count; i++) {
         processedType type;
         type.type = FUNC;
         union ctx c = {};
-        c.func = &functions.functions[i].func;
+        c.func = &builtinFunctions.functions[i].func;
         c.func->seen = 0;
         if (symbolicTable_putSymbol(table, type, c.func->identifier, NULL, c, SYMBOL_CATEGORY_FUNC) != 0) {
-            return 1;
+            return NULL;
         }
     }
+
     for (int i = 0; i < count; ++i) {
         processedType type;
         type.type = FUNC;
@@ -348,13 +348,32 @@ int processSemantics(processedFunc *funcs, int count, builtinFunctions functions
                 main = &ctx.funcs[i];
             }
             if (symbolicTable_putSymbol(table, type, funcs[i].identifier, NULL, c, SYMBOL_CATEGORY_FUNC) != 0) {
-                return 1;
+                return NULL;
             }
         }
     }
-    printf("main == NULL\n");
+
     if (main == NULL) {
-        return 1;
+        for (int i = 0; i < count; ++i) {
+            char* targetFuncName = funcs[i].identifier;
+            int callCount = 0;
+            for (int j = 0; j < count; j++) {
+                if (targetFuncName != NULL && funcs[j].identifier != NULL && strcmp(targetFuncName, funcs[j].identifier) != 0) {
+                    for (int k = 0; k < funcs[j].callListCount; k++) {
+                        if (strcmp(funcs[j].callList[k]->name, targetFuncName) == 0) {
+                            callCount++;
+                        }
+                    }
+                }
+            }
+            if(callCount == 0) {
+                main = &ctx.funcs[i];
+            }
+        }
+    }
+
+    if (main == NULL) {
+        return NULL;
     }
     if (main->args.count != 0) {
         fprintf(stderr, "main function cannot have arguments");
@@ -363,8 +382,8 @@ int processSemantics(processedFunc *funcs, int count, builtinFunctions functions
         fprintf(stderr, "main function should have 'void' return type");
     }
     if (processSemanticsForFunction(main, table) != 0) {
-        return 2;
+        return NULL;
     }
-    return 0;
+    return main->identifier;
 }
 

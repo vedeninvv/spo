@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+char* cloneCh(char* toClone) {
+    char* buff = malloc(strlen(toClone) * sizeof(char) + 1);
+    strcpy(buff, toClone);
+
+    return buff;
+}
+
 processedFunc *prepareProcedures(ASTNodes allProcedures) {
     processedFunc *funcs = malloc(sizeof(processedFunc) * allProcedures.count);
     for (int i = 0; i < allProcedures.count; ++i) {
@@ -13,7 +20,7 @@ processedFunc *prepareProcedures(ASTNodes allProcedures) {
     return funcs;
 }
 
-processedUnary prepareUnary(ASTNode *node) {
+processedUnary prepareUnary(ASTNode *node, processedFunc *func) {
     processedUnary unary = {};
 
     if (strcmp(node->type, "MINUS_UNARY") == 0) {
@@ -21,12 +28,12 @@ processedUnary prepareUnary(ASTNode *node) {
     } else if (strcmp(node->type, "NOT") == 0) {
         unary.type = UNARY_TYPE_NOT;
     }
-    unary.operand = prepareExpression(node->left);
+    unary.operand = prepareExpression(node->left, func);
     unary.astNode = node;
     return unary;
 }
 
-processedBinary prepareBinaryExpr(ASTNode *node) {
+processedBinary prepareBinaryExpr(ASTNode *node, processedFunc *func) {
     processedBinary binary = {};
     if (strcmp(node->type, "PLUS") == 0) {
         binary.type = BINARY_TYPE_PLUS;
@@ -55,8 +62,8 @@ processedBinary prepareBinaryExpr(ASTNode *node) {
     } else if (strcmp(node->type, "OR") == 0) {
         binary.type = BINARY_TYPE_OR;
     }
-    binary.leftOperand = prepareExpression(node->left);
-    binary.rightOperand = prepareExpression(node->right);
+    binary.leftOperand = prepareExpression(node->left, func);
+    binary.rightOperand = prepareExpression(node->right, func);
     binary.astNode = node;
     return binary;
 }
@@ -90,7 +97,7 @@ char *literalTypes[] = {
         "DEC",
 };
 
-expressionsList makeExpressionsList(ASTNode *node) {
+expressionsList makeExpressionsList(ASTNode *node, processedFunc *func) {
     expressionsList list = {};
     list.expressionsCount = 0;
     if (strcmp(node->type, "optionalListExpr") == 0) {
@@ -103,7 +110,7 @@ expressionsList makeExpressionsList(ASTNode *node) {
     }
     list.expressions = malloc(sizeof(processedExpression) * list.expressionsCount);
     for (int j = 0; j < list.expressionsCount; ++j) {
-        processedExpression *expr = prepareExpression(node->left);
+        processedExpression *expr = prepareExpression(node->left, func);
         node = node->right;
         if (expr == NULL) {
             printf("# Empty expression warning: %s!\n", node->left->type);
@@ -117,23 +124,42 @@ expressionsList makeExpressionsList(ASTNode *node) {
     return list;
 }
 
-processedCall prepareCall(ASTNode *node) {
+void addCall(processedFunc* func, char* callName) {
+    int flag = 0;
+    for (int i = 0; i < func->callListCount; i++) {
+        if (strcmp(func->callList[i]->name, callName) == 0) {
+            func->callList[i]->callCount++;
+            flag = 1;
+        }
+    }
+    if (flag == 0) {
+        func->callList[func->callListCount] = (callListElement*)malloc(sizeof(callListElement));
+        func->callList[func->callListCount]->callCount = 1;
+        func->callList[func->callListCount]->name = callName;
+        func->callListCount++;
+    }
+}
+
+processedCall prepareCall(ASTNode *node, processedFunc* func) {
     processedCall call = {};
     call.procedureName = node->left->value;
-    call.argumentExpressions = makeExpressionsList(node->right);
+    call.argumentExpressions = makeExpressionsList(node->right, func);
     call.astNode = node;
+
+    addCall(func, cloneCh(call.procedureName));
+
     return call;
 }
 
-processedIndexer prepareIndexer(ASTNode *node) {
+processedIndexer prepareIndexer(ASTNode *node, processedFunc *func) {
     processedIndexer indexer = {};
-    indexer.expression = prepareExpression(node);
-    indexer.indexExpressions = makeExpressionsList(node->right);
+    indexer.expression = prepareExpression(node, func);
+    indexer.indexExpressions = makeExpressionsList(node->right, func);
     indexer.astNode = node;
     return indexer;
 }
 
-processedLiteral prepareLiteral(ASTNode *node) {
+processedLiteral prepareLiteral(ASTNode *node, processedFunc* func) {
     processedLiteral literal = {};
     if (strcmp(node->type, "TRUE") == 0) {
         literal.type.type = BOOL;
@@ -163,19 +189,19 @@ processedLiteral prepareLiteral(ASTNode *node) {
     return literal;
 }
 
-processedExpression *prepareExpression(ASTNode *node) {
+processedExpression *prepareExpression(ASTNode *node, processedFunc *func) {
     processedExpression *expression = malloc(sizeof(processedExpression));
     expression->astNode = node;
     if (strcmp(node->type, "braces") == 0) {
         expression->type = BRACES;
-        expression->expression = prepareExpression(node->left);
+        expression->expression = prepareExpression(node->left, func);
         return expression;
     } else if (strcmp(node->type, "CALL") == 0) {
         expression->type = CALL;
-        expression->call = prepareCall(node);
+        expression->call = prepareCall(node, func);
     } else if (strcmp(node->type, "indexer") == 0) {
         expression->type = INDEXER;
-        expression->indexer = prepareIndexer(node);
+        expression->indexer = prepareIndexer(node, func);
     }
     if (strcmp(node->type, "IDENTIFIER") == 0) {
         expression->type = PLACE;
@@ -184,21 +210,21 @@ processedExpression *prepareExpression(ASTNode *node) {
         for (int i = 0; i < 13; ++i) {
             if (strcmp(node->type, binaryStatements[i]) == 0) {
                 expression->type = BINARY;
-                expression->binary = prepareBinaryExpr(node);
+                expression->binary = prepareBinaryExpr(node, func);
                 return expression;
             }
         }
         for (int i = 0; i < 2; ++i) {
             if (strcmp(node->type, unaryStatements[i]) == 0) {
                 expression->type = UNARY;
-                expression->unary = prepareUnary(node);
+                expression->unary = prepareUnary(node, func);
                 return expression;
             }
         }
         for (int i = 0; i < 7; i++) {
             if (strcmp(node->type, literalTypes[i]) == 0) {
                 expression->type = LITERAL;
-                expression->literal = prepareLiteral(node);
+                expression->literal = prepareLiteral(node, func);
                 return expression;
             }
         }
@@ -206,20 +232,20 @@ processedExpression *prepareExpression(ASTNode *node) {
     return expression;
 }
 
-conditionalStatement makeConditionalStatementFromIf(ASTNode *node) {
+conditionalStatement makeConditionalStatementFromIf(ASTNode *node, processedFunc* func) {
     conditionalStatement statement = {};
-    statement.condition = *prepareExpression(node->left);
-    statement.statement = prepareStatement(node->right->left);
+    statement.condition = *prepareExpression(node->left, func);
+    statement.statement = prepareStatement(node->right->left, func);
     statement.astNode = node;
     return statement;
 }
 
-processedIf *prepareIf(ASTNode *node) {
+processedIf *prepareIf(ASTNode *node, processedFunc* func) {
     processedIf *ifp = malloc(sizeof(processedIf));
-    conditionalStatement firstStatement = makeConditionalStatementFromIf(node);
+    conditionalStatement firstStatement = makeConditionalStatementFromIf(node, func);
     ifp->statement = firstStatement;
     if (node->right->right != NULL) {
-        ifp->elseStatement = prepareStatement(node->right->right->left);
+        ifp->elseStatement = prepareStatement(node->right->right->left, func);
         ifp->elseStatementExists = 1;
     } else {
         ifp->elseStatementExists = 0;
@@ -228,7 +254,7 @@ processedIf *prepareIf(ASTNode *node) {
     return ifp;
 }
 
-processedType prepareType(ASTNode *node, int arrayDem) {
+processedType prepareType(ASTNode *node, int arrayDem, processedFunc* func) {
     processedType type = {};
     type.arrayDem = arrayDem;
     if (strcmp(node->type, "TYPEDEF") == 0) {
@@ -254,26 +280,26 @@ processedType prepareType(ASTNode *node, int arrayDem) {
         type.type = CUSTOM;
         type.customTypeIdentifier = node->value;
     } else if (strcmp(node->type, "array") == 0) {
-        type = prepareType(node->left, arrayDem + strlen(node->value) - 1);
+        type = prepareType(node->left, arrayDem + strlen(node->value) - 1, func);
     }
     type.astNode = node;
     return type;
 }
 
-processedVar prepareArgDef(ASTNode *node) {
+processedVar prepareArgDef(ASTNode *node, processedFunc* func) {
     processedVar var = {};
     var.isInitValueExists = 0;
-    var.type = prepareType(node->left, 0);
+    var.type = prepareType(node->left, 0, func);
     var.identifier = node->right->value;
     var.astNode = node;
     return var;
 }
 
-processedVars prepareVars(ASTNode *node) {
+processedVars prepareVars(ASTNode *node, processedFunc* func) {
     processedVars vars = {};
     vars.astNode = node;
     vars.count = 0;
-    processedType type = prepareType(node->left, 0);
+    processedType type = prepareType(node->left, 0, func);
     ASTNode *i = node->right;
     while (i != NULL) {
         vars.count++;
@@ -289,7 +315,7 @@ processedVars prepareVars(ASTNode *node) {
             var.isInitValueExists = 0;
         } else {
             var.isInitValueExists = 1;
-            var.initValue = prepareExpression(i->left->right);
+            var.initValue = prepareExpression(i->left->right, func);
             if (strcmp(i->left->left->type, "IDENTIFIER") != 0) {
                 fprintf(stderr, "Variable name is not identifier");
                 return vars;
@@ -302,76 +328,76 @@ processedVars prepareVars(ASTNode *node) {
     return vars;
 }
 
-processedWhile prepareWhile(ASTNode *node) {
+processedWhile prepareWhile(ASTNode *node, processedFunc* func) {
     processedWhile whilep = {};
-    processedExpression *expr = prepareExpression(node->left);
+    processedExpression *expr = prepareExpression(node->left, func);
     if (expr == NULL) {
         fprintf(stderr, "invalid expression");
         return whilep;
     }
     whilep.condition = *expr;
-    whilep.block = prepareBlock(node->right);
+    whilep.block = prepareBlock(node->right, func);
     whilep.astNode = node;
     return whilep;
 }
 
-processedDoWhile prepareDoWhile(ASTNode *node) {
+processedDoWhile prepareDoWhile(ASTNode *node, processedFunc* func) {
     processedDoWhile dowhile = {};
-    processedExpression *expr = prepareExpression(node->right);
+    processedExpression *expr = prepareExpression(node->right, func);
     if (expr == NULL) {
         fprintf(stderr, "invalid expression");
         return dowhile;
     }
     dowhile.condition = *expr;
-    dowhile.block = prepareBlock(node->left);
+    dowhile.block = prepareBlock(node->left, func);
     dowhile.astNode = node;
     return dowhile;
 }
 
-processedAssigment prepareAssigment(ASTNode *node) {
+processedAssigment prepareAssigment(ASTNode *node, processedFunc* func) {
     processedAssigment assigment = {};
     if (strcmp(node->left->type, "indexer") == 0) {
         assigment.to.type = INDEXER;
-        assigment.to.indexer = prepareIndexer(node->left);
+        assigment.to.indexer = prepareIndexer(node->left, func);
     }
     if (strcmp(node->left->type, "IDENTIFIER") == 0) {
         assigment.to.type = PLACE;
         assigment.to.identifier = node->left->value;
     }
-    assigment.rightPart = prepareExpression(node->right);
+    assigment.rightPart = prepareExpression(node->right, func);
     assigment.astNode = node;
     return assigment;
 }
 
-processedStatement prepareStatement(ASTNode *node) {
+processedStatement prepareStatement(ASTNode *node, processedFunc* func) {
     processedStatement statement = {};
     if (strcmp(node->type, "var") == 0) {
         statement.type = STATEMENT_TYPE_VAR;
-        statement.vars = prepareVars(node);
+        statement.vars = prepareVars(node, func);
     } else if (strcmp(node->type, "if") == 0) {
         statement.type = STATEMENT_TYPE_IF;
-        statement.ifp = prepareIf(node);
+        statement.ifp = prepareIf(node, func);
     } else if (strcmp(node->type, "block") == 0) {
         statement.type = STATEMENT_TYPE_BLOCK;
-        statement.block = prepareBlock(node);
+        statement.block = prepareBlock(node, func);
     } else if (strcmp(node->type, "while") == 0) {
         statement.type = STATEMENT_TYPE_WHILE;
-        statement.whilep = prepareWhile(node);
+        statement.whilep = prepareWhile(node, func);
     } else if (strcmp(node->type, "dowhile") == 0) {
         statement.type = STATEMENT_TYPE_DO_WHILE;
-        statement.dowhile = prepareDoWhile(node);
+        statement.dowhile = prepareDoWhile(node, func);
     } else if (strcmp(node->type, "break") == 0) {
         statement.type = STATEMENT_TYPE_BREAK;
     } else if (strcmp(node->type, "assigment") == 0) {
         statement.type = STATEMENT_TYPE_ASSIGMENT;
-        statement.assigment = prepareAssigment(node);
+        statement.assigment = prepareAssigment(node, func);
     } else if (strcmp(node->type, "return") == 0) {
         statement.type = STATEMENT_TYPE_RETURN;
         if (node->left == NULL) {
             statement.expression.type = LITERAL;
             statement.expression.literal.type.type = VOID;
         } else {
-            processedExpression *expression = prepareExpression(node->left);
+            processedExpression *expression = prepareExpression(node->left, func);
             if (expression == NULL) {
                 fprintf(stderr, "invalid expression");
                 return statement;
@@ -379,7 +405,7 @@ processedStatement prepareStatement(ASTNode *node) {
             statement.expression = *expression;
         }
     } else {
-        processedExpression *expression = prepareExpression(node);
+        processedExpression *expression = prepareExpression(node, func);
         if (expression == NULL) {
             fprintf(stderr, "invalid expression");
             return statement;
@@ -391,7 +417,7 @@ processedStatement prepareStatement(ASTNode *node) {
     return statement;
 }
 
-processedBlock prepareBlock(ASTNode *body) {
+processedBlock prepareBlock(ASTNode *body, processedFunc* func) {
     processedBlock block = {};
     if (body->left == NULL) {
         return block;
@@ -407,7 +433,7 @@ processedBlock prepareBlock(ASTNode *body) {
     block.statements = malloc(sizeof(processedStatement) * block.statementsCount);
     int j = 0;
     while (i != NULL) {
-        block.statements[j] = prepareStatement(i->left);
+        block.statements[j] = prepareStatement(i->left, func);
         j++;
         i = i->right;
     }
@@ -416,7 +442,7 @@ processedBlock prepareBlock(ASTNode *body) {
 }
 
 
-processedVars prepareFuncArgs(ASTNode *node) {
+processedVars prepareFuncArgs(ASTNode *node, processedFunc* func) {
     processedVars args = {};
     args.count = 0;
     if (node == NULL) {
@@ -434,9 +460,9 @@ processedVars prepareFuncArgs(ASTNode *node) {
     i = node;
     for (int j = 0; j < args.count; ++j) {
         if (j == args.count - 1) {
-            args.vars[j] = prepareArgDef(i);
+            args.vars[j] = prepareArgDef(i, func);
         } else {
-            args.vars[j] = prepareArgDef(i->left);
+            args.vars[j] = prepareArgDef(i->left, func);
         }
         i = i->right;
     }
@@ -446,6 +472,7 @@ processedVars prepareFuncArgs(ASTNode *node) {
 
 processedFunc prepareProcedure(ASTNode *procedure) {
     processedFunc pf = {};
+    pf.callListCount = 0;
     if (!procedure) {
         printf("null procedure");
         return pf;
@@ -471,9 +498,9 @@ processedFunc prepareProcedure(ASTNode *procedure) {
         return pf;
     }
     pf.identifier = procedure->left->left->right->value;
-    pf.args = prepareFuncArgs(procedure->left->right);
-    pf.returnType = prepareType(procedure->left->left->left, 0);
-    pf.body = prepareBlock(procedure->right);
+    pf.args = prepareFuncArgs(procedure->left->right, &pf);
+    pf.returnType = prepareType(procedure->left->left->left, 0, &pf);
+    pf.body = prepareBlock(procedure->right, &pf);
     pf.astNode = procedure;
     return pf;
 }

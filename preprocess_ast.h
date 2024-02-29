@@ -3,6 +3,8 @@
 
 #include "ast.h"
 
+typedef struct callListElement callListElement;
+typedef struct callList callList;
 typedef struct processedType processedType;
 typedef struct expressionsList expressionsList;
 typedef struct processedStatement processedStatement;
@@ -200,6 +202,11 @@ struct processedStatement {
     ASTNode *astNode;
 };
 
+struct callListElement {
+    char* name;
+    int callCount;
+};
+
 struct processedFunc {
     char *identifier;
     processedVars args;
@@ -207,6 +214,9 @@ struct processedFunc {
     processedBlock body;
     int seen;
     ASTNode *astNode;
+
+    callListElement* callList[1024];
+    int callListCount;
 };
 
 struct conditionalStatement {
@@ -223,11 +233,11 @@ struct processedIf {
 };
 
 
-processedBlock prepareBlock(ASTNode *body);
+processedBlock prepareBlock(ASTNode *body, processedFunc* func);
 
-processedExpression *prepareExpression(ASTNode *node);
+processedExpression *prepareExpression(ASTNode *node, processedFunc* func);
 
-processedStatement prepareStatement(ASTNode *node);
+processedStatement prepareStatement(ASTNode *node, processedFunc* func);
 
 processedFunc prepareProcedure(ASTNode *procedure);
 

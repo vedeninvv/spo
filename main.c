@@ -54,7 +54,8 @@ int main(int argc, char *argv[]) {
             printf("getBuiltinFunctions\n");
             builtinFunctions builtinFuncs = getBuiltinFunctions();
             printf("processSemantics\n");
-            if (processSemantics(funcsAfterPreprocessing, allProcedures.count, builtinFuncs) != 0) {
+            char* start = processSemantics(funcsAfterPreprocessing, allProcedures.count, builtinFuncs);
+            if (start == NULL) {
                 return 1;
             }
             FILE *code = fopen(codeAsmOutFilename, "w+");
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
             asmCodeOut = code;
             asmDataOut = data;
             printf("generate_asm\n");
-            int res = generate_asm(funcsAfterPreprocessing, allProcedures.count, builtinFuncs);
+            int res = generate_asm(funcsAfterPreprocessing, allProcedures.count, builtinFuncs, start);
             fclose(code);
             fclose(data);
             if (res != 0) {
